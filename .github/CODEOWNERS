@@ -1,0 +1,15 @@
+# Who must approve what.
+#
+# The knowledge platform owner owns the schema, the validator, and the
+# indexing pipeline. Domain owners own content accuracy inside their bundle.
+# Replace the placeholder handles with real teams before relying on this.
+
+# Platform: schema, tooling, CI.
+/tools/            @aylas-ops
+/okf-profile.yaml  @aylas-ops
+/.github/          @aylas-ops
+/docs/             @aylas-ops
+
+# Bundles: one line per domain, added as each bundle lands. The owning team
+# named here must match the `owner:` frontmatter inside the bundle.
+/bundles/          @aylas-ops

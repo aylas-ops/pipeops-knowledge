@@ -1,0 +1,125 @@
+# PipeOps house profile for OKF v0.2.
+#
+# The spec is permissive on purpose (SPEC §11: consumers MUST NOT reject a
+# bundle for missing optional fields, unknown types, or broken links). That is
+# correct for exchanging bundles between organisations and wrong for a repo we
+# own. This file is where we tighten it. `okf validate` reads it; CI enforces it.
+#
+# Severities: error (fails CI) | warning (reported, does not fail) | off.
+
+profile: pipeops-house-rules
+okf_version: "0.2"
+
+# Frontmatter keys required on every concept, beyond the spec's `type`.
+# `owner` is not a spec field -- see docs/house-profile.md for why we add it.
+required_fields:
+  - title
+  - description
+  - owner
+  - tags
+  - status
+
+rules:
+  # --- OKF v0.2 conformance (SPEC §11). Never relax these. ---------------
+  frontmatter_parseable: error       # §4.1  every concept has parseable YAML
+  type_required: error               # §4.1  `type` is the one required key
+  index_frontmatter: error           # §8    index.md carries no frontmatter
+  log_format: error                  # §9    date headings are ISO YYYY-MM-DD
+  timestamp_format: error            # §5    ISO 8601 with an explicit offset
+  actor_format: error                # §7    human: / process: / producer/version
+  status_enum: error                 # §5.4  draft | stable | deprecated
+  verified_shape: error              # §5.2  each entry carries `by`
+  sources_shape: error               # §5.1  each entry carries `resource`
+  footnote_binding: error            # §5.1  [^label] joins to a sources[].id
+  computation_contract: error        # §10   runtime + a reachable computation
+
+  # --- House rules. Tighter than the spec allows. ------------------------
+  required_fields: error             # the list above
+  owner_registered: error            # owner resolves to the registry below
+  broken_links: error                # spec says tolerate; we do not ship them
+  duplicate_titles: error            # two stable concepts of one type, one name
+  resource_uri_pattern: error        # `resource` matches a known scheme
+  resource_required: error           # concrete assets must name their resource
+  stale_after_required: error        # anything with a review cycle declares one
+  attester_resource_exists: error    # attester code is present in the bundle
+
+  # --- Hygiene. Reported, does not block a merge. ------------------------
+  missing_index: warning             # a directory with no index.md
+  draft_on_main: warning             # generated drafts awaiting owner review
+  unverified: warning                # stable concept nobody has confirmed
+  stale: warning                     # now >= stale_after
+  review_overdue: warning            # last verified beyond the type's cadence
+  orphan: warning                    # nothing links to it and no index lists it
+  description_length: warning        # `description` is one sentence, not three
+
+# Concepts must declare `resource` when they describe a concrete asset.
+resource_required_types:
+  - Service
+  - BigQuery Table
+  - BigQuery Dataset
+  - Dataset
+  - Dashboard
+  - API Endpoint
+
+# Types with a review cycle must set `stale_after` (SPEC §5.5).
+stale_after_required_types:
+  - Metric
+  - Attested Computation
+  - Playbook
+
+# Known `type` values. Unlisted types warn rather than fail: the spec forbids
+# a central registry, and a new type should be cheap to introduce and easy to
+# notice. Add it here in the same PR that introduces it.
+allowed_types:
+  - Service
+  - Dataset
+  - BigQuery Table
+  - BigQuery Dataset
+  - Metric
+  - Attested Computation
+  - Playbook
+  - Runbook
+  - Decision
+  - Reference
+  - Skill
+  - Dashboard
+  - API Endpoint
+  - Business Term
+  - Log
+unlisted_type: warning
+
+# Ownership registry (manual §8: "owners map to valid teams or people").
+# Every `owner`, and every `sources[].author`, must appear here.
+owners:
+  - team:platform
+  - team:data
+  - team:security
+  - team:support
+  - team:unassigned
+  - human:ayomidelasaki@pipeops.io
+  - process:extract_github
+  - process:okf-ci
+
+# `resource` must look like something a consumer can actually follow.
+resource_uri_patterns:
+  - "^https://github\\.com/"
+  - "^https://console\\.cloud\\.google\\.com/"
+  - "^https://app\\.pipeops\\.io/"
+  - "^https?://"
+  - "^bigquery://"
+  - "^postgres://"
+  - "^service://"
+
+# How long a verified concept stays trustworthy before it needs re-review.
+# Drives the `review_overdue` warning. Manual §12: quarterly for metrics,
+# monthly for anything on the incident path.
+review_cadence_days:
+  Metric: 90
+  Attested Computation: 90
+  Playbook: 30
+  Runbook: 30
+  Service: 180
+  Decision: 365
+
+# Paths excluded from house rules (spec conformance still applies).
+exempt_paths: []
